@@ -108,15 +108,7 @@ class PointingExperiment(QDialog):
         self.current_target_index = 0
         self.current_repetition = 0
         self.initUI()
-        # self.p_id = p_id
-        # self.sizes = sizes
-        # self.distances = distances
-        # self.repetitions = repetitions
-        # # gives us a list of (distance, width) tuples:
-        # self.targets = repetitions * list(itertools.product(distances, sizes))
-        # random.shuffle(self.targets)
-        # self.elapsed = 0
-        # self.mouse_moving = False
+
 
     def start_test(self):
         self.test_started = True
@@ -124,6 +116,7 @@ class PointingExperiment(QDialog):
         return
 
     def paintEvent(self, event):
+        self.label.setText("ID: " + str(ID) + " - " + str(self.current_repetition) + "/" + str(REPETITIONS))
         if self.test_started:
             painter = QPainter(self)
             painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
@@ -140,6 +133,23 @@ class PointingExperiment(QDialog):
                     painter.drawEllipse(pos_x, pos_y, TARGETSIZE, TARGETSIZE)
                     index = index + 1
 
+    def check_input(self, m_pos_x, m_pos_y):
+        if self.current_target_pos_x > m_pos_x:
+            return
+        if self.current_target_pos_y > m_pos_y:
+            return
+        if self.current_target_pos_y + TARGETSIZE < m_pos_y:
+            return
+        if self.current_target_pos_x + TARGETSIZE < m_pos_x:
+            return
+        print("success!!")
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.check_input(event.x(), event.y())
+
+
+
     def initUI(self):
         # initialize important ui-components
         uic.loadUi("Pointing_exp.ui", self)
@@ -151,7 +161,7 @@ class PointingExperiment(QDialog):
         if height < CANVAS_MIN_HEIGHT:
             height = CANVAS_MIN_HEIGHT
         self.setFixedSize(width+2*self.canvas_margin_default, height+2*self.canvas_margin_default+self.canvas_margin_top)
-        self.label.setText(str(ID))
+        self.label.setText("ID: " + str(ID) + " - 0/" + str(REPETITIONS))
         self.start_Button.clicked.connect(lambda: self.start_test())
 
     def currentTarger(self):
