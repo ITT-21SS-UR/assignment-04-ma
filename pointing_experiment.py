@@ -24,27 +24,26 @@ REPETITIONS = 3
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
+def rename_filepath(fpath):
+    fpath = fpath.split(".")
+    return fpath[0] + "~." + fpath[1]
+
 
 class Test:
     def __init__(self):
         # self.color_palette = pd.read_csv(url_color_csv)
-        self.column_names = ["ID", "Condition", "Repetition", "Target(Index, relative Postition)", "Targetposition(absolute)", "Targetsize(absolute)",
+        self.column_names = ["ID", "Condition", "Repetition", "Target(Index, relative Postition)",
+                             "Targetposition(absolute)", "Targetsize(absolute)",
                              "Timestamp(Teststart)", "Timestamp(Rep_load)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.participant_ID = None
         self.participant_Condition = "normal"
 
-
-
     def setup_target(self):
-        index = random.randrange(0, WIDTH*HEIGHT)
-        pos_x = random.randrange(0, TARGETSPACE-TARGETSIZE)
-        pos_y = random.randrange(0, TARGETSPACE-TARGETSIZE)
+        index = random.randrange(0, WIDTH * HEIGHT)
+        pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE)
+        pos_y = random.randrange(0, TARGETSPACE - TARGETSIZE)
         return str(index) + ", " + str(pos_x) + ", " + str(pos_y)
-
-    def rename_filepath(self, fpath):
-        fpath = fpath.split(".")
-        return fpath[0] + "~." + fpath[1]
 
     def create_test(self, p_id):
         # creates test on command and fills the table
@@ -61,13 +60,12 @@ class Test:
 
         print(self.log_data)
 
-
     def save_test(self):
         # saves table to "results.csv"
-        path_results = "result_" + self.participant_ID + ".csv"
+        path_results = "result_ID" + self.participant_ID + ".csv"
         file = Path(path_results)
         if file.is_file():
-            path_results = self.rename_filepath(path_results)
+            path_results = rename_filepath(path_results)
             self.setup_dataframe()
             return
         self.log_data.to_csv(path_results, index=False)
@@ -83,15 +81,8 @@ class Test:
     def set_target_abs_pos(self, rep_status, pos_x, pos_y):
         self.currentTest.loc[rep_status, self.column_names[4]] = str(pos_x) + ", " + str(pos_y)
 
-    def get_color_name(self, rep_status):
+    def get_current_target(self, rep_status):
         return self.currentTest.loc[rep_status, self.column_names[3]]
-
-    def get_hex_color(self, rep_status):
-        return self.currentTest.loc[rep_status, self.column_names[4]]
-
-    def get_delay_time(self, rep_status):
-        return self.currentTest.loc[rep_status, self.column_names[5]]
-
 
 
 
@@ -103,6 +94,7 @@ class PointingExperiment(QDialog):
         self.initUI()
         test = Test()
         test.create_test("345")
+        test.save_test()
         # self.p_id = p_id
         # self.sizes = sizes
         # self.distances = distances
@@ -118,7 +110,7 @@ class PointingExperiment(QDialog):
         painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
         for i in range(0, WIDTH):
             for j in range(0, HEIGHT):
-                painter.drawEllipse(40*i+40, 50*j+50, 40, 40)
+                painter.drawEllipse(40 * i + 40, 50 * j + 50, 40, 40)
 
     def initUI(self):
         # initialize important ui-components
