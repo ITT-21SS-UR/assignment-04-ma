@@ -13,7 +13,7 @@ import random
 from PyQt5.QtCore import Qt
 import time
 
-HEADERSIZE = 50
+
 CANVAS_MIN_WIDTH = 200
 CANVAS_MIN_HEIGHT = 100
 TARGETS_PER_ROW = 15
@@ -23,7 +23,6 @@ TARGETSPACE = 60
 REPETITIONS = 3
 ID = 345
 pd.set_option("display.max_rows", None, "display.max_columns", None)
-
 
 class Test:
     def __init__(self):
@@ -36,7 +35,8 @@ class Test:
         self.participant_ID = 345
         self.participant_Condition = "normal"
 
-    def setup_target(self):
+    @staticmethod
+    def setup_target():
         index = random.randrange(0, TARGETS_PER_ROW * TARGETS_PER_COLUMN)
         return index
 
@@ -69,7 +69,8 @@ class Test:
             return
         self.log_data.to_csv(path_results, index=False)
 
-    def rename_filepath(self, fpath):
+    @staticmethod
+    def rename_filepath(fpath):
         fpath = fpath.split(".")
         return fpath[0] + "~." + fpath[1]
 
@@ -155,9 +156,6 @@ class PointingExperiment(QDialog):
             self.test.save_test()
             self.close()
 
-
-
-
     def mousePressEvent(self, event):
         if self.test_started:
             if event.button() == QtCore.Qt.LeftButton:
@@ -180,7 +178,25 @@ class PointingExperiment(QDialog):
 
 
 
+
+
+def get_presets():
+    config = configparser.ConfigParser()
+    config.read('setup.ini')
+    print(config['Canvas_Settings']['CanvasMinWidth'])
+    global CANVAS_MIN_WIDTH, CANVAS_MIN_HEIGHT, TARGETS_PER_ROW, TARGETS_PER_COLUMN, TARGETSIZE, TARGETSPACE, REPETITIONS, ID
+    CANVAS_MIN_WIDTH = int(config['Canvas_Settings']['CanvasMinWidth'])
+    CANVAS_MIN_HEIGHT = int(config['Canvas_Settings']['CanvasMinHeight'])
+    TARGETS_PER_ROW = int(config['Test_Settings']['TargetsPerRow'])
+    TARGETS_PER_COLUMN = int(config['Test_Settings']['TargetsPerColumn'])
+    TARGETSIZE = int(config['Test_Settings']['TargetSize'])
+    TARGETSPACE = int(config['Test_Settings']['TargetSpace'])
+    REPETITIONS = int(config['Test_Settings']['Repetitions'])
+    ID = config['Test_Settings']['ID']
+
+
 def main():
+    get_presets()
     app = QtWidgets.QApplication(sys.argv)
     win = PointingExperiment()
 
