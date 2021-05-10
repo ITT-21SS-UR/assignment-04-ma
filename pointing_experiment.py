@@ -16,11 +16,12 @@ import time
 HEADERSIZE = 50
 CANVASWIDTH = 400
 CANVASHEIGHT = 500
-WIDTH = 3
-HEIGHT = 4
+WIDTH = 15
+HEIGHT = 10
 TARGETSIZE = 40
 TARGETSPACE = 60
 REPETITIONS = 3
+ID = 345
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
@@ -35,7 +36,7 @@ class Test:
                              "Timestamp(Teststart)", "Timestamp(Rep_load)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.path_results = "result.csv"
-        self.participant_ID = None
+        self.participant_ID = 345
         self.participant_Condition = "normal"
 
     def setup_target(self):
@@ -93,18 +94,19 @@ class Test:
 
 
 
+
 class PointingExperiment(QDialog):
 
     def __init__(self):
         super().__init__()
         self.timer = QtCore.QTime()
-        self.canvas_margin_top = 50
-        self.initUI()
-        self.canvas_margin_top = 50
-        test = Test()
-        test.create_test("345")
-        test.save_test()
+        self.canvas_margin_top = 70
+        self.canvas_margin_left = 15
+        self.test_started = False
+        self.test = Test()
+        self.test.create_test(str(ID))
 
+        self.initUI()
         # self.p_id = p_id
         # self.sizes = sizes
         # self.distances = distances
@@ -115,19 +117,29 @@ class PointingExperiment(QDialog):
         # self.elapsed = 0
         # self.mouse_moving = False
 
+    def start_test(self):
+        self.test_started = True
+        self.start_Button.hide()
+        return
+
     def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
-        for i in range(0, WIDTH):
-            for j in range(0, HEIGHT):
-                painter.drawEllipse(40 * i + 40, 50 * j + 50, 40, 40)
+        if self.test_started:
+            painter = QPainter(self)
+            painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
+            for i in range(0, WIDTH):
+                for j in range(0, HEIGHT):
+                    pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE) + i*TARGETSPACE + self.canvas_margin_left
+                    pos_y = random.randrange(0, TARGETSPACE - TARGETSIZE) + j*TARGETSPACE + self.canvas_margin_top
+                    painter.drawEllipse(pos_x, pos_y, TARGETSIZE, TARGETSIZE)
 
     def initUI(self):
         # initialize important ui-components
         uic.loadUi("Pointing_exp.ui", self)
         self.setWindowTitle('Pointing Experiment')
         self.layout = QVBoxLayout()
-        # self.resize(800, 600)
+        self.setFixedSize(1000, 600)
+        self.label.setText(str(ID))
+        self.start_Button.clicked.connect(lambda: self.start_test())
 
     def currentTarger(self):
 
