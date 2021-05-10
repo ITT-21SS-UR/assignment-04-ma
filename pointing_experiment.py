@@ -31,7 +31,7 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 class Test:
     def __init__(self):
         # self.color_palette = pd.read_csv(url_color_csv)
-        self.column_names = ["ID", "Condition", "Repetition", "Target(Index, relative Postition)",
+        self.column_names = ["ID", "Condition", "Repetition", "Targetindex",
                              "Targetposition(absolute)", "Targetsize(absolute)",
                              "Timestamp(Teststart)", "Timestamp(Rep_load)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
@@ -41,9 +41,7 @@ class Test:
 
     def setup_target(self):
         index = random.randrange(0, WIDTH * HEIGHT)
-        pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE)
-        pos_y = random.randrange(0, TARGETSPACE - TARGETSIZE)
-        return str(index) + ", " + str(pos_x) + ", " + str(pos_y)
+        return index
 
     def create_test(self, p_id):
         # creates test on command and fills the table
@@ -82,15 +80,15 @@ class Test:
 
     def set_timestamp(self, rep_status, case):
         if case == 0:
-            self.currentTest[self.column_names[4]] = time.time()
+            self.log_data[self.column_names[4]] = time.time()
             return
-        self.currentTest.loc[rep_status, self.column_names[case + 8]] = time.time()
+        self.log_data.loc[rep_status, self.column_names[case + 8]] = time.time()
 
     def set_target_abs_pos(self, rep_status, pos_x, pos_y):
-        self.currentTest.loc[rep_status, self.column_names[4]] = str(pos_x) + ", " + str(pos_y)
+        self.log_data.loc[rep_status, self.column_names[4]] = str(pos_x) + ", " + str(pos_y)
 
     def get_current_target(self, rep_status):
-        return self.currentTest.loc[rep_status, self.column_names[3]]
+        return self.log_data.loc[rep_status, self.column_names[3]]
 
 
 
@@ -105,7 +103,10 @@ class PointingExperiment(QDialog):
         self.test_started = False
         self.test = Test()
         self.test.create_test(str(ID))
-
+        self.current_target_pos_x = 0
+        self.current_target_pos_y = 0
+        self.current_target_index = 0
+        self.current_repetition = 0
         self.initUI()
         # self.p_id = p_id
         # self.sizes = sizes
@@ -126,11 +127,17 @@ class PointingExperiment(QDialog):
         if self.test_started:
             painter = QPainter(self)
             painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
+            index = 0
             for i in range(0, WIDTH):
                 for j in range(0, HEIGHT):
                     pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE) + i*TARGETSPACE + self.canvas_margin_left
                     pos_y = random.randrange(0, TARGETSPACE - TARGETSIZE) + j*TARGETSPACE + self.canvas_margin_top
-                    painter.drawEllipse(pos_x, pos_y, TARGETSIZE, TARGETSIZE)
+                    if index == self.test.get_current_target(self.current_repetition):
+                        self.current_target_pos_x = pos_x
+                        self.current_target_pos_y = pos_y
+                    else:
+                        painter.drawEllipse(pos_x, pos_y, TARGETSIZE, TARGETSIZE)
+                    index = index + 1
 
     def initUI(self):
         # initialize important ui-components
