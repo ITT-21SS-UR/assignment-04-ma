@@ -16,8 +16,8 @@ import time
 HEADERSIZE = 50
 CANVASWIDTH = 400
 CANVASHEIGHT = 500
-WIDTH = 15
-HEIGHT = 10
+WIDTH = 16
+HEIGHT = 7
 TARGETSIZE = 40
 TARGETSPACE = 60
 REPETITIONS = 3
@@ -130,20 +130,20 @@ class PointingExperiment(QDialog):
             index = 0
             for i in range(0, WIDTH):
                 for j in range(0, HEIGHT):
+                    painter.setBrush(QBrush(Qt.transparent, Qt.SolidPattern))
                     pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE) + i*TARGETSPACE + self.canvas_margin_left
                     pos_y = random.randrange(0, TARGETSPACE - TARGETSIZE) + j*TARGETSPACE + self.canvas_margin_top
                     if index == self.test.get_current_target(self.current_repetition):
                         self.current_target_pos_x = pos_x
                         self.current_target_pos_y = pos_y
-                    else:
-                        painter.drawEllipse(pos_x, pos_y, TARGETSIZE, TARGETSIZE)
+                        painter.setBrush(QBrush(Qt.red, Qt.SolidPattern))
+                    painter.drawEllipse(pos_x, pos_y, TARGETSIZE, TARGETSIZE)
                     index = index + 1
 
     def initUI(self):
         # initialize important ui-components
         uic.loadUi("Pointing_exp.ui", self)
         self.setWindowTitle('Pointing Experiment')
-        self.layout = QVBoxLayout()
         self.setFixedSize(1000, 600)
         self.label.setText(str(ID))
         self.start_Button.clicked.connect(lambda: self.start_test())
