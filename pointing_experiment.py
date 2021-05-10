@@ -14,10 +14,10 @@ from PyQt5.QtCore import Qt
 import time
 
 HEADERSIZE = 50
-CANVASWIDTH = 400
-CANVASHEIGHT = 500
-WIDTH = 16
-HEIGHT = 7
+CANVAS_MIN_WIDTH = 200
+CANVAS_MIN_HEIGHT = 100
+TARGETS_PER_ROW = 15
+TARGETS_PER_COLUMN = 7
 TARGETSIZE = 40
 TARGETSPACE = 60
 REPETITIONS = 3
@@ -40,7 +40,7 @@ class Test:
         self.participant_Condition = "normal"
 
     def setup_target(self):
-        index = random.randrange(0, WIDTH * HEIGHT)
+        index = random.randrange(0, TARGETS_PER_ROW * TARGETS_PER_COLUMN)
         return index
 
     def create_test(self, p_id):
@@ -99,7 +99,7 @@ class PointingExperiment(QDialog):
         super().__init__()
         self.timer = QtCore.QTime()
         self.canvas_margin_top = 70
-        self.canvas_margin_left = 15
+        self.canvas_margin_default = 15
         self.test_started = False
         self.test = Test()
         self.test.create_test(str(ID))
@@ -128,10 +128,10 @@ class PointingExperiment(QDialog):
             painter = QPainter(self)
             painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
             index = 0
-            for i in range(0, WIDTH):
-                for j in range(0, HEIGHT):
+            for i in range(0, TARGETS_PER_ROW):
+                for j in range(0, TARGETS_PER_COLUMN):
                     painter.setBrush(QBrush(Qt.transparent, Qt.SolidPattern))
-                    pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE) + i*TARGETSPACE + self.canvas_margin_left
+                    pos_x = random.randrange(0, TARGETSPACE - TARGETSIZE) + i*TARGETSPACE + self.canvas_margin_default
                     pos_y = random.randrange(0, TARGETSPACE - TARGETSIZE) + j*TARGETSPACE + self.canvas_margin_top
                     if index == self.test.get_current_target(self.current_repetition):
                         self.current_target_pos_x = pos_x
@@ -144,7 +144,13 @@ class PointingExperiment(QDialog):
         # initialize important ui-components
         uic.loadUi("Pointing_exp.ui", self)
         self.setWindowTitle('Pointing Experiment')
-        self.setFixedSize(1000, 600)
+        width = TARGETS_PER_ROW * TARGETSPACE
+        height = TARGETS_PER_COLUMN * TARGETSPACE
+        if width < CANVAS_MIN_WIDTH:
+            width = CANVAS_MIN_WIDTH
+        if height < CANVAS_MIN_HEIGHT:
+            height = CANVAS_MIN_HEIGHT
+        self.setFixedSize(width+2*self.canvas_margin_default, height+2*self.canvas_margin_default+self.canvas_margin_top)
         self.label.setText(str(ID))
         self.start_Button.clicked.connect(lambda: self.start_test())
 
