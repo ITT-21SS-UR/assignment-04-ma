@@ -24,9 +24,7 @@ REPETITIONS = 3
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
-def rename_filepath(fpath):
-    fpath = fpath.split(".")
-    return fpath[0] + "~." + fpath[1]
+
 
 
 class Test:
@@ -36,6 +34,7 @@ class Test:
                              "Targetposition(absolute)", "Targetsize(absolute)",
                              "Timestamp(Teststart)", "Timestamp(Rep_load)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
+        self.path_results = "result.csv"
         self.participant_ID = None
         self.participant_Condition = "normal"
 
@@ -48,6 +47,7 @@ class Test:
     def create_test(self, p_id):
         # creates test on command and fills the table
         self.participant_ID = p_id
+        self.set_res_path()
         target = [None] * REPETITIONS
         self.log_data[self.column_names[2]] = target
         for i in range(0, REPETITIONS):
@@ -60,15 +60,22 @@ class Test:
 
         print(self.log_data)
 
+    def set_res_path(self):
+        self.path_results = "result_ID" + self.participant_ID + ".csv"
+
     def save_test(self):
         # saves table to "results.csv"
-        path_results = "result_ID" + self.participant_ID + ".csv"
+        path_results = self.path_results
         file = Path(path_results)
         if file.is_file():
-            path_results = rename_filepath(path_results)
-            self.setup_dataframe()
+            self.path_results = self.rename_filepath(path_results)
+            self.save_test()
             return
         self.log_data.to_csv(path_results, index=False)
+
+    def rename_filepath(self, fpath):
+        fpath = fpath.split(".")
+        return fpath[0] + "~." + fpath[1]
 
     # getter and setter:
 
@@ -91,10 +98,13 @@ class PointingExperiment(QDialog):
     def __init__(self):
         super().__init__()
         self.timer = QtCore.QTime()
+        self.canvas_margin_top = 50
         self.initUI()
+        self.canvas_margin_top = 50
         test = Test()
         test.create_test("345")
         test.save_test()
+
         # self.p_id = p_id
         # self.sizes = sizes
         # self.distances = distances
