@@ -26,17 +26,19 @@ id = 345
 condition_selection = ["normal"]
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
+
 class Test:
     def __init__(self):
         # self.color_palette = pd.read_csv(url_color_csv)
         self.column_names = ["ID", "Condition", "Repetition", "Target Index",
                              "Target Position(relative)", "Target Size(absolute)",
-                             "Timestamp(Teststart)", "Timestamp(Rep_load)", "Timestamp(clicked)", "Pointer Postition(start)", "Pointer Postition(end)"]
+                             "Timestamp(Teststart)", "Timestamp(Rep_load)", "Timestamp(clicked)",
+                             "Pointer Postition(start)", "Pointer Postition(end)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.path_results = "result.csv"
         self.participant_ID = 0
         self.pos_conditons = condition_selection
-        self.participant_Condition = ["normal"]*repetitions
+        self.participant_Condition = ["normal"] * repetitions
 
     @staticmethod
     def setup_target():
@@ -48,11 +50,10 @@ class Test:
         self.participant_ID = p_id
         self.set_res_path()
         index = 0
-        while index<repetitions:
+        while index < repetitions:
             for j in range(0, len(self.pos_conditons)):
-                self.participant_Condition[index+j] = str(self.pos_conditons[j])
-                print(self.participant_Condition)
-                if index == repetitions-1:
+                self.participant_Condition[index + j] = str(self.pos_conditons[j])
+                if index == repetitions - 1:
                     break
             index = index + j + 1
             self.condition_roulette()
@@ -61,22 +62,20 @@ class Test:
         for i in range(0, repetitions):
             target[i] = self.setup_target()
         self.log_data[self.column_names[0]] = self.participant_ID
+        print(self.participant_Condition)
         self.log_data[self.column_names[1]] = self.participant_Condition
         self.log_data[self.column_names[2]] = self.log_data.index
         self.log_data[self.column_names[3]] = target
         self.log_data[self.column_names[5]] = targetsize
 
-        print(self.log_data)
 
     def condition_roulette(self):
         temp_cond = self.pos_conditons[0]
         for i in range(0, len(self.pos_conditons)):
-            if i == (len(self.pos_conditons)-1):
+            if i == (len(self.pos_conditons) - 1):
                 self.pos_conditons[i] = temp_cond
                 break
-            self.pos_conditons[i] = self.pos_conditons[i+1]
-        print(self.pos_conditons)
-
+            self.pos_conditons[i] = self.pos_conditons[i + 1]
 
     def set_res_path(self):
         self.path_results = "result_ID" + self.participant_ID + ".csv"
@@ -125,6 +124,7 @@ class PointingExperiment(QDialog):
         self.canvas_margin_top = 70
         self.canvas_margin_default = 15
         self.test_started = False
+        self.canvas_updated = False
         self.current_target_pos_x = 0
         self.current_target_pos_y = 0
         self.current_target_index = 0
@@ -141,7 +141,7 @@ class PointingExperiment(QDialog):
 
     def paintEvent(self, event):
         self.label.setText("ID: " + str(id) + " - " + str(self.current_repetition + 1) + "/" + str(repetitions))
-        if self.test_started:
+        if self.test_started & (not self.canvas_updated):
             condition = str(self.test.get_current_con(self.current_repetition))
             painter_color = Qt.black
             painter_color_fill = Qt.gray
@@ -151,7 +151,6 @@ class PointingExperiment(QDialog):
             if condition == "Color: red":
                 painter_color = Qt.red
                 painter_color_fill = Qt.darkRed
-
             painter = QPainter(self)
             painter.setPen(QPen(painter_color, 2, Qt.SolidLine))
             index = 0
@@ -169,6 +168,7 @@ class PointingExperiment(QDialog):
                     index = index + 1
             self.test.set_timestamp(self.current_repetition, 1)
             self.test.set_po_pos(self.current_repetition, 0, pyautogui.position())
+            self.canvas_updated = True
 
 
     def check_input(self, m_pos_x, m_pos_y):
@@ -176,9 +176,9 @@ class PointingExperiment(QDialog):
             return
         if self.current_target_pos_y > m_pos_y:
             return
-        if self.current_target_pos_y + targetsize < m_pos_y:
+        if (self.current_target_pos_y + targetsize) < m_pos_y:
             return
-        if self.current_target_pos_x + targetsize < m_pos_x:
+        if (self.current_target_pos_x + targetsize) < m_pos_x:
             return
         print("success!!")
         self.test.set_timestamp(self.current_repetition, 2)
@@ -191,6 +191,7 @@ class PointingExperiment(QDialog):
         if self.test_started:
             if self.current_repetition + 1 < repetitions:
                 self.current_repetition = self.current_repetition + 1
+                self.canvas_updated = False
                 return
             self.test_started = False
             self.test.save_test()
@@ -217,8 +218,7 @@ class PointingExperiment(QDialog):
         self.start_Button.clicked.connect(lambda: self.start_test())
 
 
-
-def init_args_handler():    # how to handle the possible arguments (Dialogtree u.a)
+def init_args_handler():  # how to handle the possible arguments (Dialogtree u.a)
     global id
     global config_url
     if len(sys.argv) != 3:
@@ -231,12 +231,14 @@ def init_args_handler():    # how to handle the possible arguments (Dialogtree u
     id = sys.argv[2]
     return
 
-def exception_handler(case):    # exiting earlier due to .. reasons
+
+def exception_handler(case):  # exiting earlier due to .. reasons
     print(dialog(case))
     sys.exit()
 
+
 def dialog(case):
-    switch = {                  # a simple dialog manager
+    switch = {  # a simple dialog manager
         "NoArgs": "Please provide a configuration file & an ID as arguments!",
         "noFile": "Couldn't open file!",
         "noID": "Please provide participant ID!",
@@ -247,6 +249,7 @@ def dialog(case):
                    "\'TargetsPerRow\', \'TargetsPerColumn\', \'TargetSize\', \'TargetSpace\', \'Repetitions\', \'Conditions\'\n"
     }
     return switch.get(case)
+
 
 def get_presets():
     global canvas_min_width, canvas_min_height, targets_per_row, targets_per_column, targetsize, targetspace, repetitions, condition_selection
@@ -264,7 +267,6 @@ def get_presets():
         condition_selection = config['Test_Settings']['Conditions'].split(", ")
     except KeyError:
         exception_handler("noInput")
-
 
 
 def main():
