@@ -33,7 +33,7 @@ class Test:
         self.column_names = ["ID", "Condition", "Repetition", "Target Index",
                              "Target Position(relative)", "Target Size(absolute)",
                              "Timestamp(Teststart)", "Timestamp(Rep_load)", "Timestamp(clicked)",
-                             "Pointer Postition(start)", "Pointer Postition(end)"]
+                             "Pointer Postition(start, absolute)", "Pointer Postition(end, absolute)", "Pointer Postition(end, relative)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.path_results = "result.csv"
         self.participant_ID = 0
@@ -183,6 +183,7 @@ class PointingExperiment(QDialog):
         print("success!!")
         self.test.set_timestamp(self.current_repetition, 2)
         self.test.set_po_pos(self.current_repetition, 1, pyautogui.position())
+        self.test.set_po_pos(self.current_repetition, 2, "(" + str(m_pos_x) + ", " + str(m_pos_y) + ")")
         print(self.test.log_data)
         self.update()
 
