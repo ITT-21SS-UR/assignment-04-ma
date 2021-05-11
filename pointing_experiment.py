@@ -4,7 +4,7 @@ import random
 import math
 import itertools
 from pathlib import Path
-
+import os
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap
@@ -13,7 +13,7 @@ import random
 from PyQt5.QtCore import Qt
 import time
 
-
+config_url = 'setup.ini'
 CANVAS_MIN_WIDTH = 200
 CANVAS_MIN_HEIGHT = 100
 TARGETS_PER_ROW = 15
@@ -178,21 +178,52 @@ class PointingExperiment(QDialog):
 
 
 
+def init_args_handler():    # how to handle the possible arguments (Dialogtree u.a)
+    global ID
+    global config_url
+    if len(sys.argv) != 3:
+        exception_handler("NoArgs")
+    if not (os.path.isfile(sys.argv[1])):
+        exception_handler("noFile")
+    if not isinstance(int(sys.argv[2]), int):
+        exception_handler("noID")
+    config_url = sys.argv[1]
+    ID = sys.argv[2]
+    return
 
+def exception_handler(case):    # exiting earlier due to .. reasons
+    print(dialog(case))
+    sys.exit()
+
+def dialog(case):
+    switch = {                  # a simple dialog manager
+        "NoArgs": "Please provide a configuration file & an ID as arguments!",
+        "noFile": "Couldn't open file!",
+        "noID": "Please provide participant ID!",
+        "noInput": "Missing input from configuration file!\n\n"
+                   "Please Provide following settings in category \'Canvas_Settings\':\n"
+                   "\'CanvasMinWidth\', \'CanvasMinHeight\'\n\n"
+                   "...and the following settings in category \'Test_Settings\':\n"
+                   "\'TargetsPerRow\', \'TargetsPerColumn\', \'TargetSize\', \'TargetSpace\', \'Repetitions\'\n"
+    }
+    return switch.get(case)
 
 def get_presets():
+    global CANVAS_MIN_WIDTH, CANVAS_MIN_HEIGHT, TARGETS_PER_ROW, TARGETS_PER_COLUMN, TARGETSIZE, TARGETSPACE, REPETITIONS
+    init_args_handler()
     config = configparser.ConfigParser()
-    config.read('setup.ini')
-    print(config['Canvas_Settings']['CanvasMinWidth'])
-    global CANVAS_MIN_WIDTH, CANVAS_MIN_HEIGHT, TARGETS_PER_ROW, TARGETS_PER_COLUMN, TARGETSIZE, TARGETSPACE, REPETITIONS, ID
-    CANVAS_MIN_WIDTH = int(config['Canvas_Settings']['CanvasMinWidth'])
-    CANVAS_MIN_HEIGHT = int(config['Canvas_Settings']['CanvasMinHeight'])
-    TARGETS_PER_ROW = int(config['Test_Settings']['TargetsPerRow'])
-    TARGETS_PER_COLUMN = int(config['Test_Settings']['TargetsPerColumn'])
-    TARGETSIZE = int(config['Test_Settings']['TargetSize'])
-    TARGETSPACE = int(config['Test_Settings']['TargetSpace'])
-    REPETITIONS = int(config['Test_Settings']['Repetitions'])
-    ID = config['Test_Settings']['ID']
+    config.read(config_url)
+    try:
+        CANVAS_MIN_WIDTH = int(config['Canvas_Settings']['CanvasMinWidth'])
+        CANVAS_MIN_HEIGHT = int(config['Canvas_Settings']['CanvasMinHeight'])
+        TARGETS_PER_ROW = int(config['Test_Settings']['TargetsPerRow'])
+        TARGETS_PER_COLUMN = int(config['Test_Settings']['TargetsPerColumn'])
+        TARGETSIZE = int(config['Test_Settings']['TargetSize'])
+        TARGETSPACE = int(config['Test_Settings']['TargetSpace'])
+        REPETITIONS = int(config['Test_Settings']['Repetitions'])
+    except KeyError:
+        exception_handler("noInput")
+
 
 
 def main():
