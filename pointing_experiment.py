@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt
 import time
 import pyautogui
 
+
 config_url = 'setup.ini'
 canvas_min_width = 200
 canvas_min_height = 100
@@ -103,8 +104,8 @@ class Test:
             return
         self.log_data.loc[rep_status, self.column_names[6 + case]] = time.time()
 
-    def set_target_rel_pos(self, rep_status, pos_x, pos_y):
-        self.log_data.loc[rep_status, self.column_names[4]] = "(" + str(pos_x) + ", " + str(pos_y) + ")"
+    def set_target_rel_pos(self, rep_status, position):
+        self.log_data.loc[rep_status, self.column_names[4]] = position
 
     def set_po_pos(self, rep_status, case, position):
         self.log_data.loc[rep_status, self.column_names[9 + case]] = position
@@ -163,7 +164,7 @@ class PointingExperiment(QDialog):
                         self.current_target_pos_x = pos_x
                         self.current_target_pos_y = pos_y
                         painter.setBrush(QBrush(painter_color_fill, Qt.SolidPattern))
-                        self.test.set_target_rel_pos(self.current_repetition, pos_x, pos_y)
+                        self.test.set_target_rel_pos(self.current_repetition, pyautogui.Point(pos_x, pos_y))
                     painter.drawEllipse(pos_x, pos_y, targetsize, targetsize)
                     index = index + 1
             self.test.set_timestamp(self.current_repetition, 1)
@@ -183,7 +184,7 @@ class PointingExperiment(QDialog):
         print("success!!")
         self.test.set_timestamp(self.current_repetition, 2)
         self.test.set_po_pos(self.current_repetition, 1, pyautogui.position())
-        self.test.set_po_pos(self.current_repetition, 2, "(" + str(m_pos_x) + ", " + str(m_pos_y) + ")")
+        self.test.set_po_pos(self.current_repetition, 2, pyautogui.Point(m_pos_x, m_pos_y))
         print(self.test.log_data)
         self.update()
 
