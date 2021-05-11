@@ -23,6 +23,7 @@ targetsize = 40
 targetspace = 60
 repetitions = 3
 id = 345
+condition_selection = ["normal"]
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 class Test:
@@ -34,7 +35,8 @@ class Test:
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.path_results = "result.csv"
         self.participant_ID = 0
-        self.participant_Condition = "normal"
+        self.pos_conditons = condition_selection
+        self.participant_Condition = ["normal"]*repetitions
 
     @staticmethod
     def setup_target():
@@ -45,6 +47,15 @@ class Test:
         # creates test on command and fills the table
         self.participant_ID = p_id
         self.set_res_path()
+        index = 0
+        while index<repetitions:
+            for j in range(0, len(self.pos_conditons)):
+                self.participant_Condition[index+j] = str(self.pos_conditons[j])
+                print(self.participant_Condition)
+                if index == repetitions-1:
+                    break
+            index = index + j + 1
+            self.condition_roulette()
         target = [None] * repetitions
         self.log_data[self.column_names[2]] = target
         for i in range(0, repetitions):
@@ -56,6 +67,16 @@ class Test:
         self.log_data[self.column_names[5]] = targetsize
 
         print(self.log_data)
+
+    def condition_roulette(self):
+        temp_cond = self.pos_conditons[0]
+        for i in range(0, len(self.pos_conditons)):
+            if i == (len(self.pos_conditons)-1):
+                self.pos_conditons[i] = temp_cond
+                break
+            self.pos_conditons[i] = self.pos_conditons[i+1]
+        print(self.pos_conditons)
+
 
     def set_res_path(self):
         self.path_results = "result_ID" + self.participant_ID + ".csv"
@@ -92,6 +113,9 @@ class Test:
     def get_current_target(self, rep_status):
         return self.log_data.loc[rep_status, self.column_names[3]]
 
+    def get_current_con(self, rep_status):
+        return self.log_data.loc[rep_status, self.column_names[1]]
+
 
 class PointingExperiment(QDialog):
 
@@ -118,9 +142,18 @@ class PointingExperiment(QDialog):
     def paintEvent(self, event):
         self.label.setText("ID: " + str(id) + " - " + str(self.current_repetition + 1) + "/" + str(repetitions))
         if self.test_started:
+            condition = str(self.test.get_current_con(self.current_repetition))
+            painter_color = Qt.black
+            painter_color_fill = Qt.gray
+            if condition == "Color: green":
+                painter_color = Qt.green
+                painter_color_fill = Qt.darkGreen
+            if condition == "Color: red":
+                painter_color = Qt.red
+                painter_color_fill = Qt.darkRed
 
             painter = QPainter(self)
-            painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
+            painter.setPen(QPen(painter_color, 2, Qt.SolidLine))
             index = 0
             for i in range(0, targets_per_row):
                 for j in range(0, targets_per_column):
@@ -130,7 +163,7 @@ class PointingExperiment(QDialog):
                     if index == self.test.get_current_target(self.current_repetition):
                         self.current_target_pos_x = pos_x
                         self.current_target_pos_y = pos_y
-                        painter.setBrush(QBrush(Qt.darkGreen, Qt.SolidPattern))
+                        painter.setBrush(QBrush(painter_color_fill, Qt.SolidPattern))
                         self.test.set_target_abs_pos(self.current_repetition, pos_x, pos_y)
                     painter.drawEllipse(pos_x, pos_y, targetsize, targetsize)
                     index = index + 1
@@ -211,12 +244,12 @@ def dialog(case):
                    "Please Provide following settings in category \'Canvas_Settings\':\n"
                    "\'CanvasMinWidth\', \'CanvasMinHeight\'\n\n"
                    "...and the following settings in category \'Test_Settings\':\n"
-                   "\'TargetsPerRow\', \'TargetsPerColumn\', \'TargetSize\', \'TargetSpace\', \'Repetitions\'\n"
+                   "\'TargetsPerRow\', \'TargetsPerColumn\', \'TargetSize\', \'TargetSpace\', \'Repetitions\', \'Conditions\'\n"
     }
     return switch.get(case)
 
 def get_presets():
-    global canvas_min_width, canvas_min_height, targets_per_row, targets_per_column, targetsize, targetspace, repetitions
+    global canvas_min_width, canvas_min_height, targets_per_row, targets_per_column, targetsize, targetspace, repetitions, condition_selection
     init_args_handler()
     config = configparser.ConfigParser()
     config.read(config_url)
@@ -228,6 +261,7 @@ def get_presets():
         targetsize = int(config['Test_Settings']['TargetSize'])
         targetspace = int(config['Test_Settings']['TargetSpace'])
         repetitions = int(config['Test_Settings']['Repetitions'])
+        condition_selection = config['Test_Settings']['Conditions'].split(", ")
     except KeyError:
         exception_handler("noInput")
 
