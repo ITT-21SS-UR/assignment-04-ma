@@ -1,25 +1,23 @@
-
 import configparser
 import sys
-import random
-import math
-import itertools
 from pathlib import Path
 import os
 import mouse
-
-import PyQt5.QtGui
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QApplication, QWidget, QMainWindow
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap, QCursor
+from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtGui import QPainter, QBrush, QPen
 import pandas as pd
 import random
 from PyQt5.QtCore import Qt
 import time
 import pyautogui
 
-
+"""
+Initiating all global variables (the values remain unused and are 
+only suggestions for the configuration file and arguments at running the script)
+"""
 config_url = 'setup.ini'
+pointing_technique_enabled = True
 canvas_min_width = 200
 canvas_min_height = 100
 targets_per_row = 15
@@ -32,14 +30,20 @@ condition_selection = ["normal"]
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
-
 class Test:
+    """
+    The Test-class is a structure-esk-pre-set of the actual test, additionally it predetermines the
+    test to a large extend and is capable of writing csv files
+    """
+
     def __init__(self):
-        # self.color_palette = pd.read_csv(url_color_csv)
+        # Initializes test & dataframe
         self.column_names = ["ID", "Condition", "Repetition", "Target Index",
                              "Target Position(relative)", "Target Size(absolute)",
                              "Timestamp(Teststart)", "Timestamp(Rep_load)", "Timestamp(clicked)",
-                             "Pointer Postition(start, absolute)", "Pointer Postition(end, absolute)", "Pointer Postition(end, relative)"]
+                             "Pointer Postition(start, absolute)", "Pointer Postition(end, absolute)",
+                             "Pointer Postition(end, relative)", "Pointing Technique"]
+        # the column name column name "Pointing Technique" was added in last second only due to finalise
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.path_results = "result.csv"
         self.participant_ID = 0
@@ -48,6 +52,7 @@ class Test:
 
     @staticmethod
     def setup_target():
+        # returns random index in array of target possibilities
         index = random.randrange(0, targets_per_row * targets_per_column)
         return index
 
@@ -73,9 +78,10 @@ class Test:
         self.log_data[self.column_names[2]] = self.log_data.index
         self.log_data[self.column_names[3]] = target
         self.log_data[self.column_names[5]] = targetsize
-
+        self.log_data[self.column_names[12]] = pointing_technique_enabled
 
     def condition_roulette(self):
+        # algorithm in for counter-balanced sorting
         temp_cond = self.pos_conditons[0]
         for i in range(0, len(self.pos_conditons)):
             if i == (len(self.pos_conditons) - 1):
@@ -84,10 +90,11 @@ class Test:
             self.pos_conditons[i] = self.pos_conditons[i + 1]
 
     def set_res_path(self):
+        # sets save file path for the results
         self.path_results = "result_ID" + self.participant_ID + ".csv"
 
     def save_test(self):
-        # saves table to "results.csv"
+        # saves table to "results_ID[..].csv"
         path_results = self.path_results
         file = Path(path_results)
         if file.is_file():
@@ -123,9 +130,13 @@ class Test:
 
 
 class PointingExperiment(QDialog, QtWidgets.QGraphicsView):
+    """
+        all ui-management in one class...
+    """
 
     def __init__(self):
         super().__init__()
+        print(pointing_technique_enabled)
         self.timer = QtCore.QTime()
         self.canvas_margin_top = 70
         self.canvas_margin_default = 15
@@ -138,9 +149,10 @@ class PointingExperiment(QDialog, QtWidgets.QGraphicsView):
         self.test = Test()
         self.test.create_test(str(id))
         self.initUI()
-        self.setMouseTracking(True)
+        # for bug-fixes:
+        self.setMouseTracking(pointing_technique_enabled)
 
-    #https://stackoverflow.com/questions/25368295/qwidgetmousemoveevent-not-firing-when-cursor-over-child-widget
+    # https://stackoverflow.com/questions/25368295/qwidgetmousemoveevent-not-firing-when-cursor-over-child-widget
     def setMouseTracking(self, flag):
         def recursive_set(parent):
             for child in parent.findChildren(QtCore.QObject):
@@ -160,6 +172,7 @@ class PointingExperiment(QDialog, QtWidgets.QGraphicsView):
         return
 
     def paintEvent(self, event):
+        # updates the view
         self.label.setText("ID: " + str(id) + " - " + str(self.current_repetition + 1) + "/" + str(repetitions))
         if self.test_started & (not self.canvas_updated):
             condition = str(self.test.get_current_con(self.current_repetition))
@@ -191,6 +204,7 @@ class PointingExperiment(QDialog, QtWidgets.QGraphicsView):
             self.canvas_updated = True
 
     def check_input(self, m_pos_x, m_pos_y):
+        # check if pointer is in the target's space:
         if self.current_target_pos_x > m_pos_x:
             return
         if self.current_target_pos_y > m_pos_y:
@@ -218,37 +232,37 @@ class PointingExperiment(QDialog, QtWidgets.QGraphicsView):
             self.close()
 
     def mouseMoveEvent(self, event):
-        if self.test_started:
-            if event.type() == QtCore.QEvent.MouseMove:
-                print("mouse moved!")
-                self.check_cursor_for_near_target(event.x(), event.y())
+        # triggers on moved mouse
+        if pointing_technique_enabled:
+            if self.test_started:
+                if event.type() == QtCore.QEvent.MouseMove:
+                    print("mouse moved!")
+                    self.check_cursor_for_near_target(event.x(), event.y())
 
     def check_cursor_for_near_target(self, m_pos_x, m_pos_y):
-            cursor_distance_to_target_x = self.current_target_pos_x - m_pos_x + targetsize/2
-            cursor_distance_to_target_y = self.current_target_pos_y - m_pos_y + targetsize/2
+        # drags mouse to target
+        cursor_distance_to_target_x = self.current_target_pos_x - m_pos_x + targetsize / 2
+        cursor_distance_to_target_y = self.current_target_pos_y - m_pos_y + targetsize / 2
 
-            print("the cursors distance to target: ",cursor_distance_to_target_x, cursor_distance_to_target_y)
+        print("the cursors distance to target: ", cursor_distance_to_target_x, cursor_distance_to_target_y)
 
-            if abs(cursor_distance_to_target_x) < targetsize and abs(cursor_distance_to_target_y) < targetsize:
-                if(cursor_distance_to_target_x > 0 and cursor_distance_to_target_y > 0):
-                    mouse.move(cursor_distance_to_target_x, cursor_distance_to_target_y, absolute=False, duration=0.2)
-                if(cursor_distance_to_target_x > 0 and cursor_distance_to_target_y < 0):
-                    mouse.move(cursor_distance_to_target_x, -cursor_distance_to_target_y,absolute=False, duration=0.2)
-                if(cursor_distance_to_target_x < 0 and cursor_distance_to_target_y < 0):
-                    mouse.move(-cursor_distance_to_target_x, -cursor_distance_to_target_y, absolute=False, duration=0.2)
-                if(cursor_distance_to_target_x < 0 and cursor_distance_to_target_y > 0):
-                    mouse.move(-cursor_distance_to_target_x, cursor_distance_to_target_y, absolute=False, duration=0.2)
-
-          #  mouse.move(self.current_target_pos_x, self.current_target_pos_y)
-           # print("mouse moved to target position!")
+        if abs(cursor_distance_to_target_x) < targetsize and abs(cursor_distance_to_target_y) < targetsize:
+            if self.current_target_pos_x > m_pos_x:
+                mouse.move(cursor_distance_to_target_x, 0, absolute=False, duration=0.2)
+            if (self.current_target_pos_x + targetsize) < m_pos_x:
+                mouse.move(cursor_distance_to_target_x, 0, absolute=False, duration=0.2)
+            if self.current_target_pos_y > m_pos_y:
+                mouse.move(0, cursor_distance_to_target_y, absolute=False, duration=0.2)
+            if (self.current_target_pos_y + targetsize) < m_pos_y:
+                mouse.move(0, cursor_distance_to_target_y, absolute=False, duration=0.2)
 
     def mousePressEvent(self, event):
+        # gets mouse press
         if self.test_started:
             if event.button() == QtCore.Qt.LeftButton:
                 self.check_input(event.x(), event.y())
                 print("mouse pressed!")
-                #mouse.move(500,500)
-
+                # mouse.move(500,500)
 
     def initUI(self):
         # initialize important ui-components
@@ -266,8 +280,8 @@ class PointingExperiment(QDialog, QtWidgets.QGraphicsView):
         self.start_Button.clicked.connect(lambda: self.start_test())
 
 
-
-def init_args_handler():  # how to handle the possible arguments (Dialogtree u.a)
+def init_args_handler():
+    # how to handle the possible arguments (Dialogtree u.a)
     global id
     global config_url
     if len(sys.argv) != 3:
@@ -281,13 +295,15 @@ def init_args_handler():  # how to handle the possible arguments (Dialogtree u.a
     return
 
 
-def exception_handler(case):  # exiting earlier due to .. reasons
+def exception_handler(case):
+    # exiting earlier due to .. reasons
     print(dialog(case))
     sys.exit()
 
 
 def dialog(case):
-    switch = {  # a simple dialog manager
+    # a simple dialog manager
+    switch = {
         "NoArgs": "Please provide a configuration file & an ID as arguments!",
         "noFile": "Couldn't open file!",
         "noID": "Please provide participant ID!",
@@ -295,13 +311,14 @@ def dialog(case):
                    "Please Provide following settings in category \'Canvas_Settings\':\n"
                    "\'CanvasMinWidth\', \'CanvasMinHeight\'\n\n"
                    "...and the following settings in category \'Test_Settings\':\n"
-                   "\'TargetsPerRow\', \'TargetsPerColumn\', \'TargetSize\', \'TargetSpace\', \'Repetitions\', \'Conditions\'\n"
+                   "\'TargetsPerRow\', \'TargetsPerColumn\', \'TargetSize\', \'TargetSpace\', \'Repetitions\', \'Conditions\', \'PointingTechnique\'\n"
     }
     return switch.get(case)
 
 
 def get_presets():
-    global canvas_min_width, canvas_min_height, targets_per_row, targets_per_column, targetsize, targetspace, repetitions, condition_selection
+    # reading the configurations and writing them into the predicated globule counterparts
+    global canvas_min_width, canvas_min_height, targets_per_row, targets_per_column, targetsize, targetspace, repetitions, condition_selection, pointing_technique_enabled
     init_args_handler()
     config = configparser.ConfigParser()
     config.read(config_url)
@@ -314,9 +331,12 @@ def get_presets():
         targetspace = int(config['Test_Settings']['TargetSpace'])
         repetitions = int(config['Test_Settings']['Repetitions'])
         condition_selection = config['Test_Settings']['Conditions'].split(", ")
+        if str(config['Test_Settings']['PointingTechnique']) == "True":
+            pointing_technique_enabled = True
+        else:
+            pointing_technique_enabled = False
     except KeyError:
         exception_handler("noInput")
-
 
 
 def main():

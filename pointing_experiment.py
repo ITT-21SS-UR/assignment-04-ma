@@ -1,20 +1,20 @@
 import configparser
 import sys
-import random
-import math
-import itertools
 from pathlib import Path
 import os
-from PyQt5 import QtGui, QtWidgets, QtCore, uic
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap
+from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtGui import QPainter, QBrush, QPen
 import pandas as pd
 import random
 from PyQt5.QtCore import Qt
 import time
 import pyautogui
 
-
+"""
+Initiating all global variables (the values remain unused and are 
+only suggestions for the configuration file and arguments at running the script)
+"""
 config_url = 'setup.ini'
 canvas_min_width = 200
 canvas_min_height = 100
@@ -29,12 +29,18 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
 class Test:
+    """
+    The Test-class is a structure-esk-pre-set of the actual test, additionally it predetermines the
+    test to a large extend and is capable of writing csv files
+    """
+
     def __init__(self):
-        # self.color_palette = pd.read_csv(url_color_csv)
+        # Initializes test & dataframe
         self.column_names = ["ID", "Condition", "Repetition", "Target Index",
                              "Target Position(relative)", "Target Size(absolute)",
                              "Timestamp(Teststart)", "Timestamp(Rep_load)", "Timestamp(clicked)",
-                             "Pointer Postition(start, absolute)", "Pointer Postition(end, absolute)", "Pointer Postition(end, relative)"]
+                             "Pointer Postition(start, absolute)", "Pointer Postition(end, absolute)",
+                             "Pointer Postition(end, relative)"]
         self.log_data = pd.DataFrame(columns=self.column_names)
         self.path_results = "result.csv"
         self.participant_ID = 0
@@ -43,6 +49,7 @@ class Test:
 
     @staticmethod
     def setup_target():
+        # returns random index in array of target possibilities
         index = random.randrange(0, targets_per_row * targets_per_column)
         return index
 
@@ -69,8 +76,8 @@ class Test:
         self.log_data[self.column_names[3]] = target
         self.log_data[self.column_names[5]] = targetsize
 
-
     def condition_roulette(self):
+        # algorithm in for counter-balanced sorting
         temp_cond = self.pos_conditons[0]
         for i in range(0, len(self.pos_conditons)):
             if i == (len(self.pos_conditons) - 1):
@@ -79,10 +86,11 @@ class Test:
             self.pos_conditons[i] = self.pos_conditons[i + 1]
 
     def set_res_path(self):
+        # sets save file path for the results
         self.path_results = "result_ID" + self.participant_ID + ".csv"
 
     def save_test(self):
-        # saves table to "results.csv"
+        # saves table to "results_ID[..].csv"
         path_results = self.path_results
         file = Path(path_results)
         if file.is_file():
@@ -118,6 +126,9 @@ class Test:
 
 
 class PointingExperiment(QDialog):
+    """
+        all ui-management in one class...
+    """
 
     def __init__(self):
         super().__init__()
@@ -141,11 +152,13 @@ class PointingExperiment(QDialog):
         return
 
     def paintEvent(self, event):
+        # updates the view
         self.label.setText("ID: " + str(id) + " - " + str(self.current_repetition + 1) + "/" + str(repetitions))
         if self.test_started & (not self.canvas_updated):
             condition = str(self.test.get_current_con(self.current_repetition))
             painter_color = Qt.black
             painter_color_fill = Qt.gray
+            # condition triggers:
             if condition == "Color: green":
                 painter_color = Qt.green
                 painter_color_fill = Qt.darkGreen
@@ -155,11 +168,13 @@ class PointingExperiment(QDialog):
             painter = QPainter(self)
             painter.setPen(QPen(painter_color, 2, Qt.SolidLine))
             index = 0
+            # draws array of random circles:
             for i in range(0, targets_per_row):
                 for j in range(0, targets_per_column):
                     painter.setBrush(QBrush(Qt.transparent, Qt.SolidPattern))
                     pos_x = random.randrange(0, targetspace - targetsize) + i * targetspace + self.canvas_margin_default
                     pos_y = random.randrange(0, targetspace - targetsize) + j * targetspace + self.canvas_margin_top
+                    # if index is the index of the target the drawn target data will be saved
                     if index == self.test.get_current_target(self.current_repetition):
                         self.current_target_pos_x = pos_x
                         self.current_target_pos_y = pos_y
@@ -171,8 +186,8 @@ class PointingExperiment(QDialog):
             self.test.set_po_pos(self.current_repetition, 0, pyautogui.position())
             self.canvas_updated = True
 
-
     def check_input(self, m_pos_x, m_pos_y):
+        # check if pointer is in the target's space:
         if self.current_target_pos_x > m_pos_x:
             return
         if self.current_target_pos_y > m_pos_y:
@@ -200,6 +215,7 @@ class PointingExperiment(QDialog):
             self.close()
 
     def mousePressEvent(self, event):
+        # gets mouse press
         if self.test_started:
             if event.button() == QtCore.Qt.LeftButton:
                 self.check_input(event.x(), event.y())
@@ -220,7 +236,8 @@ class PointingExperiment(QDialog):
         self.start_Button.clicked.connect(lambda: self.start_test())
 
 
-def init_args_handler():  # how to handle the possible arguments (Dialogtree u.a)
+def init_args_handler():
+    # how to handle the possible arguments (dialog tree u.a)
     global id
     global config_url
     if len(sys.argv) != 3:
@@ -234,13 +251,15 @@ def init_args_handler():  # how to handle the possible arguments (Dialogtree u.a
     return
 
 
-def exception_handler(case):  # exiting earlier due to .. reasons
+def exception_handler(case):
+    # exiting earlier due to .. reasons
     print(dialog(case))
     sys.exit()
 
 
 def dialog(case):
-    switch = {  # a simple dialog manager
+    # a simple dialog manager
+    switch = {
         "NoArgs": "Please provide a configuration file & an ID as arguments!",
         "noFile": "Couldn't open file!",
         "noID": "Please provide participant ID!",
@@ -254,6 +273,7 @@ def dialog(case):
 
 
 def get_presets():
+    # reading the configurations and writing them into the predicated globule counterparts
     global canvas_min_width, canvas_min_height, targets_per_row, targets_per_column, targetsize, targetspace, repetitions, condition_selection
     init_args_handler()
     config = configparser.ConfigParser()
